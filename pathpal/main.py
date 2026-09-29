@@ -5,7 +5,9 @@ from fastapi.staticfiles import StaticFiles
 from trades import TRADES, BUYERS, PROVIDERS, TESTIMONY
 T = {t["id"]: t for t in TRADES}
 app = FastAPI(title="PathPal")
-DB, DIST = "pathpal.db", ["Villupuram", "Barmer", "Gaya", "Nuh"]
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB = os.path.join(BASE_DIR, "pathpal.db")
+DIST = ["Villupuram", "Barmer", "Gaya", "Nuh"]
 SAATHIS = ["Kalpana (ASHA worker)", "Ravi (CSC operator)", "Fatima (SHG leader)", "Suresh (volunteer)"]
 
 def db():
@@ -139,4 +141,16 @@ def dashboard():
     fair = {kd: sum(1 for r in rows if r["kind"] == kd) for kd in ("build", "upgrade", "leap")}
     x.close(); return dict(funnel=funnel, proposals=props, fairness=fair, total=len(rows), note="Mock seed data + live choices")
 
-app.mount("/", StaticFiles(directory="static", html=True))
+@app.get("/healthz")
+def healthz():
+    return {"status": "ok"}
+
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+if os.path.exists(STATIC_DIR):
+    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True))
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+
