@@ -1,0 +1,88 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PathPal</title><style>
+:root{--ink:#10302b;--bg:#eef4f1;--card:#fff;--teal:#0f6b5c;--gold:#e8a200;--mut:#5b716c;--red:#a3352c;--fs:16px}
+*{box-sizing:border-box}body{margin:0;font:var(--fs)/1.5 Georgia,serif;background:var(--bg);color:var(--ink)}
+body.hc{--bg:#000;--card:#111;--ink:#fff;--mut:#ccc;--teal:#4fe0c4;--gold:#ffd23f;border:0}
+main{max-width:960px;margin:auto;padding:20px}h1{margin:0;font-size:2.2rem}h1 span{color:var(--teal)}.sub{color:var(--mut);margin:.2rem 0 1rem}
+nav{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}button,select,textarea{font:inherit}
+button{border:0;border-radius:8px;padding:9px 14px;background:var(--teal);color:#fff;cursor:pointer}button.alt{background:var(--card);color:var(--ink);border:1px solid #b9cbc6}button.gold{background:var(--gold);color:#241a00}button.warn{background:var(--red);color:#fff}
+button:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--gold)}
+.box{background:var(--card);border-radius:12px;padding:16px;margin-bottom:14px;border:1px solid #d5e2de}
+textarea{width:100%;height:96px;padding:10px;border:1px solid #b9cbc6;border-radius:8px;background:var(--card);color:var(--ink)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;align-items:center}
+.chip{background:#dcefe9;border-radius:99px;padding:2px 10px;font-size:.9rem;color:#10302b}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.kind{font-weight:bold;color:var(--teal)}.bar{height:8px;background:#e1ebe8;border-radius:9px;overflow:hidden}.bar i{display:block;height:100%;background:var(--gold)}
+.small{font-size:.87rem;color:var(--mut)}.hide{display:none}
+details{margin-top:6px}summary{cursor:pointer;color:var(--teal);font-weight:bold}
+.wa{background:#dcf8c6;color:#111;border-radius:10px;padding:12px;font-size:.95rem}
+.flag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:.85rem;font-weight:bold}
+.flag.ok{background:#dcefe9;color:var(--teal)}.flag.risk{background:#f6dcd8;color:var(--red)}
+.timeline{display:flex;gap:6px;flex-wrap:wrap}
+</style></head><body><main>
+<div class="row" style="justify-content:space-between">
+<h1>Path<span>Pal</span></h1>
+<div class="row"><button class="alt" id="fm">A−</button><button class="alt" id="fp">A+</button><button class="alt" id="hc">High contrast</button></div>
+</div>
+<p class="sub">From a missed call to a first paycheck. (Prototype, mock data)</p>
+<nav><button id="t1">Beneficiary</button><button class="alt" id="t2">Officials dashboard</button></nav>
+<section id="v1">
+<div class="box"><div class="row"><button class="gold" id="call">📞 Give a missed call</button><select id="lang"><option value="en">English</option><option value="hi">हिन्दी</option><option value="ta">தமிழ்</option></select>
+<select id="dist"><option>Villupuram</option><option>Barmer</option><option>Gaya</option><option>Nuh</option></select></div>
+<p id="status" class="small">Press the button to simulate the free callback, or just type or speak below.</p>
+<textarea id="txt" aria-label="Your story" placeholder="Tell us your education, your work and what you want to do"></textarea>
+<div class="row"><button id="mic">🎤 Speak</button><button id="go">Find my paths</button>
+<button class="alt" data-s="I studied till 10th standard. My family does traditional tailoring for 8 years. I like stitching and want to work from home.">Sample: tailor</button>
+<button class="alt" data-s="मैं बारहवीं पास हूँ। मुझे मोबाइल का शौक है और मैं मोबाइल रिपेयर सीखना चाहता हूँ। मेरे पैर में दिव्यांगता है, मैं चल नहीं सकता।">नमूना: हिन्दी</button>
+<button class="alt" data-s="School">Sample: too short (low confidence)</button></div></div>
+<div id="out"></div></section>
+<section id="v2" class="hide"></section>
+</main><script>
+const $=s=>document.querySelector(s),LC={en:"en-IN",hi:"hi-IN",ta:"ta-IN"};
+const HELLO={en:"Hello, this is PathPal. Tell me about your education, your work, and what you want to do.",hi:"नमस्ते, मैं पाथपल हूँ। अपनी पढ़ाई, काम और आप क्या करना चाहते हैं, बताइए।",ta:"Vanakkam, this is PathPal. Please tell me about your education and work."};
+const L={build:'Build on',upgrade:'Upgrade',leap:'Leap'};
+let lastKind={}; // trade -> kind, for checkin/whatsapp reuse
+function speak(t){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang=LC[$('#lang').value];speechSynthesis.speak(u)}
+$('#fm').onclick=()=>document.documentElement.style.setProperty('--fs',(parseInt(getComputedStyle(document.documentElement).getPropertyValue('--fs'))-1)+'px');
+$('#fp').onclick=()=>document.documentElement.style.setProperty('--fs',(parseInt(getComputedStyle(document.documentElement).getPropertyValue('--fs'))+1)+'px');
+$('#hc').onclick=()=>document.body.classList.toggle('hc');
+$('#call').onclick=()=>{$('#status').textContent="📞 Missed call received. PathPal is calling you back (free)...";setTimeout(()=>{$('#status').textContent="📞 Connected. Speak or type your story.";speak(HELLO[$('#lang').value])},2500)};
+document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{$('#txt').value=b.dataset.s;if(/[\u0900-\u097F]/.test(b.dataset.s))$('#lang').value='hi'});
+$('#mic').onclick=()=>{const R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R)return alert('Voice input needs Chrome. You can type instead.');
+const r=new R();r.lang=LC[$('#lang').value];r.onresult=e=>{$('#txt').value=e.results[0][0].transcript;go()};r.onend=()=>$('#mic').textContent='🎤 Speak';$('#mic').textContent='Listening...';r.start()};
+$('#go').onclick=go;
+async function go(){const text=$('#txt').value.trim();if(!text)return $('#status').textContent="Please say or type something first.";
+$('#out').innerHTML='<p class="small">Finding your paths...</p>';
+const d=await (await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,lang:$('#lang').value})})).json();
+const p=d.profile,chips=[`Education: ${p.education}`,`Experience: ${p.years} yrs`,p.home&&'Wants home-based work',p.limited&&'Mobility limitation',p.job?'Prefers a job':'Prefers self-employment',...p.skills.map(s=>'Skill: '+s),...p.interests.map(s=>'Interest: '+s)].filter(Boolean);
+let html=`<div class="box"><div class="row" style="justify-content:space-between"><b>Your profile</b> <span class="small">read by ${d.engine} · confidence ${d.confidence}%</span></div><div class="row">${chips.map(c=>`<span class="chip">${c}</span>`).join('')}</div>`;
+if(d.handover) html+=`<p><span class="flag risk">Low confidence</span> We couldn't understand enough. <button class="warn" onclick="alert('Simulated: connecting you to a local Saathi who speaks your language.')">Talk to a human Saathi</button></p>`;
+html+='</div>';
+html+=`<div class="grid">${d.pathways.map(w=>`<div class="box"><div class="kind">${L[w.kind]}</div><h3 style="margin:.2rem 0">${w.name}</h3>
+<div class="small">Feasibility ${w.feas}/100</div><div class="bar"><i style="width:${w.feas}%"></i></div>
+<p>${w.why}</p><p class="small">NSQF level ${w.nsqf}${w.rpl?' · RPL fast-track':''}<br>Income ₹${w.inc[0].toLocaleString()}–${w.inc[1].toLocaleString()}/month<br>Cost about ₹${w.cost.toLocaleString()} · first income in about ${w.months+1} months<br>Support: ${w.scheme}</p>
+<details><summary>Local buyers (${w.buyers.length})</summary><ul class="small">${w.buyers.map(b=>`<li>${b}</li>`).join('')}</ul></details>
+<details><summary>Nearby training centres</summary>${w.providers.map(pr=>`<p class="small">${pr.name} — trust score ${pr.score}/100, ${pr.km} km, ${pr.seats} seats</p>`).join('')}</details>
+<details><summary>Hear from someone like you</summary><p class="small">${w.testimony}</p><button class="alt" onclick="speak(${JSON.stringify(w.testimony).replace(/"/g,'&quot;')})">🔊 Play story</button></details>
+<div class="row"><button class="alt" onclick="speak(${JSON.stringify(w.say).replace(/"/g,'&quot;')})">🔊 Listen</button><button onclick="pick('${w.id}','${w.kind}','${w.name.replace(/'/g,"")}',this)">Choose this</button></div>
+<div class="after hide"></div></div>`).join('')}</div>`;
+$('#out').innerHTML=html; speak(d.intro)}
+async function pick(trade,kind,name,b){await fetch('/api/choose',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({trade,kind,district:$('#dist').value})});
+b.textContent='Chosen. A centre will contact you.';b.disabled=true;lastKind[trade]=kind;
+const card=b.closest('.box').querySelector('.after');card.classList.remove('hide');
+card.innerHTML=`<div class="wa"><b>PathPal update</b><br>${name} chosen in ${$('#dist').value}.<br>Support: see scheme above.<br>Your journey: profiled → enrolled → training → placement.</div>
+<div class="row"><button class="alt" onclick="copyCard('${name}','${trade}')">Copy for WhatsApp</button></div>
+<p class="small" style="margin-top:8px">Follow-through check-ins:</p>
+<div class="timeline">${[7,30,90,180].map(d=>`<button class="alt" onclick="checkin('${trade}',${d},this)">Day ${d}</button>`).join('')}</div>
+<div class="ci small"></div>`}
+async function checkin(trade,day,b){const d=await (await fetch('/api/checkin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({trade,day})})).json();
+const box=b.closest('.after').querySelector('.ci');
+box.innerHTML+=`<p><span class="flag ${d.risk?'risk':'ok'}">Day ${d.day}</span> ${d.message}</p>`;b.disabled=true}
+function copyCard(name,trade){const t=`PathPal: ${name} chosen for you in ${$('#dist').value}. Your training centre will contact you soon. Reply STOP to opt out.`;
+navigator.clipboard?.writeText(t);alert('Copied. Paste this into WhatsApp or SMS.')}
+$('#t1').onclick=()=>{$('#v1').classList.remove('hide');$('#v2').classList.add('hide')};
+$('#t2').onclick=async()=>{$('#v1').classList.add('hide');$('#v2').classList.remove('hide');const d=await (await fetch('/api/dashboard')).json(),m=d.funnel.profiled||1,fm=Math.max(1,...Object.values(d.fairness));
+$('#v2').innerHTML=`<div class="box"><b>Funnel</b> <span class="small">(${d.note})</span>${Object.entries(d.funnel).map(([k,v])=>`<p style="margin:.6rem 0 .1rem">${k}: <b>${v}</b></p><div class="bar"><i style="width:${v/m*100}%"></i></div>`).join('')}</div>
+<div class="box"><b>Fairness check</b><p class="small">How often each pathway kind is actually chosen. If Leap stays near zero, the system may be steering people back into inherited work.</p>${Object.entries(d.fairness).map(([k,v])=>`<p style="margin:.6rem 0 .1rem">${L[k]}: <b>${v}</b></p><div class="bar"><i style="width:${v/fm*100}%;background:${k=='leap'?'#0f6b5c':'#e8a200'}"></i></div>`).join('')}</div>
+<div class="box"><b>Batch proposals</b><p class="small">Clusters where enough people want the same trade, so training can be brought to them.</p>${d.proposals.map(x=>`<p>${x.district}: <b>${x.trade}</b> · ${x.n} beneficiaries → propose a batch</p>`).join('')||'<p class="small">No clusters yet.</p>'}</div>`}
+</script></body></html>
